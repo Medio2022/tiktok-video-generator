@@ -1,0 +1,17 @@
+output/
+logs/
+storage/
+playwright_state/
+venv/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
