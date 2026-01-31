@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Configuration - TikTok Generator</title>
+
+    <link rel="stylesheet" href="/static/css/output.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+    <div x-data="configApp()" class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="/" class="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2 mb-4">
+                ← Retour au Dashboard
+            </a>
+            <h1 class="text-4xl font-bold mb-2">⚙️ Configuration</h1>
+            <p class="text-slate-400">Gérez vos clés API et personnalisez vos vidéos</p>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div x-show="message.text" :class="message.type === 'success' ? 'bg-green-600' : 'bg-red-600'"
+            class="rounded-lg p-4 mb-6">
+            <p x-text="message.text"></p>
+        </div>
+
+        <!-- API Keys Section -->
+        <div class="bg-slate-800 rounded-xl p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-6">🔑 Clés API</h2>
+
+            <form @submit.prevent="saveConfig">
+                <div class="space-y-4">
+                    <!-- DeepSeek API Key -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">DeepSeek API Key</label>
+                        <input type="password" x-model="config.deepseek_api_key"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            placeholder="sk-...">
+                        <p class="text-xs text-slate-400 mt-1">Pour la génération de contenu AI (gratuit illimité)</p>
+                    </div>
+
+                    <!-- Pexels API Key -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Pexels API Key</label>
+                        <input type="password" x-model="config.pexels_api_key"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            placeholder="Pexels API key">
+                        <p class="text-xs text-slate-400 mt-1">Pour télécharger les vidéos HD (gratuit)</p>
+                    </div>
+
+                    <!-- TikTok Credentials -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">TikTok Username</label>
+                        <input type="text" x-model="config.tiktok_username"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            placeholder="@votre_username">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">TikTok Password</label>
+                        <input type="password" x-model="config.tiktok_password"
+                            class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Subtitle Settings -->
+        <div class="bg-slate-800 rounded-xl p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-6">📝 Sous-titres</h2>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Couleur par défaut</label>
+                    <select x-model="config.subtitle_color"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3">
+                        <option value="0,255,255,255">Cyan</option>
+                        <option value="255,255,0,255">Jaune</option>
+                        <option value="255,100,255,255">Rose</option>
+                        <option value="255,255,255,255">Blanc</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Taille (px)</label>
+                    <input type="number" x-model="config.subtitle_size" min="60" max="120"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3">
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="mt-6 bg-slate-900 rounded-lg p-6">
+                <p class="text-sm text-slate-400 mb-2">Aperçu:</p>
+                <div class="text-center">
+                    <span
+                        :style="`color: rgb(${config.subtitle_color.split(',').slice(0,3).join(',')}); font-size: ${config.subtitle_size}px; font-weight: 800; text-shadow: 0 0 10px rgba(0,0,0,0.8);`">
+                        Exemple de sous-titre
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Default Theme -->
+        <div class="bg-slate-800 rounded-xl p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-6">🎨 Thème par défaut</h2>
+
+            <select x-model="config.theme" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3">
+                <option value="motivation">💪 Motivation</option>
+                <option value="productivite">⚡ Productivité</option>
+                <option value="tech">💻 Technologie</option>
+                <option value="business">💼 Business</option>
+                <option value="sante">🏃 Santé</option>
+            </select>
+        </div>
+
+        <!-- Save Button -->
+        <button @click="saveConfig"
+            class="w-full bg-cyan-600 hover:bg-cyan-700 font-bold py-4 px-8 rounded-xl transition-all text-lg">
+            💾 Sauvegarder la configuration
+        </button>
+    </div>
+
+    <script>
+        function configApp() {
+            return {
+                config: {
+                    deepseek_api_key: '',
+                    pexels_api_key: '',
+                    theme: 'motivation',
+                    subtitle_color: '0,255,255,255',
+                    subtitle_size: 85,
+                    tiktok_username: '',
+                    tiktok_password: ''
+                },
+                message: {
+                    type: '',
+                    text: ''
+                },
+
+                async init() {
+                    await this.loadConfig();
+                },
+
+                async loadConfig() {
+                    try {
+                        const response = await fetch('/api/config');
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.config = { ...this.config, ...data.config };
+                        }
+                    } catch (error) {
+                        console.error('Error loading config:', error);
+                    }
+                },
+
+                async saveConfig() {
+                    try {
+                        const response = await fetch('/api/config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.config)
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.message = {
+                                type: 'success',
+                                text: '✅ Configuration sauvegardée avec succès !'
+                            };
+
+                            setTimeout(() => this.message = { type: '', text: '' }, 3000);
+                        } else {
+                            this.message = {
+                                type: 'error',
+                                text: '❌ Erreur lors de la sauvegarde'
+                            };
+                        }
+                    } catch (error) {
+                        console.error('Error saving config:', error);
+                        this.message = {
+                            type: 'error',
+                            text: '❌ Erreur: ' + error.message
+                        };
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

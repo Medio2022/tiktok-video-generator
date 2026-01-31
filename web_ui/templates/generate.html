@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Générer Vidéo - TikTok Generator</title>
+
+    <link rel="stylesheet" href="/static/css/output.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .cyan-gradient {
+            background: linear-gradient(135deg, #00ffff 0%, #00d4d4 100%);
+        }
+
+        .progress-animate {
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+
+            0%,
+            100% {
+                transform: translateX(-100%);
+            }
+
+            50% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+    <div x-data="generateApp()" class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="/" class="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2 mb-4">
+                ← Retour au Dashboard
+            </a>
+            <h1 class="text-4xl font-bold mb-2">🎬 Générer Nouvelle Vidéo</h1>
+            <p class="text-slate-400">Créez une vidéo TikTok professionnelle en quelques clics</p>
+        </div>
+
+        <!-- Generation Form -->
+        <div x-show="!generating && !videoGenerated" class="bg-slate-800 rounded-xl p-8">
+            <form @submit.prevent="startGeneration">
+                <!-- Theme Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" for="theme">Thème de la vidéo</label>
+                    <select id="theme" name="theme" x-model="formData.theme"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        <option value="motivation">💪 Motivation</option>
+                        <option value="productivite">⚡ Productivité</option>
+                        <option value="tech">💻 Technologie</option>
+                        <option value="business">💼 Business</option>
+                        <option value="sante">🏃 Santé</option>
+                    </select>
+                </div>
+
+                <!-- Avatar Selection -->
+                <div class="mb-6 border-t border-slate-700 pt-6">
+                    <label class="block text-sm font-medium mb-3 flex items-center gap-2">
+                        🎭 Avatar AI (Vidéo UGC Réaliste)
+                        <span class="text-xs bg-cyan-500 text-slate-900 px-2 py-1 rounded font-bold">NOUVEAU</span>
+                    </label>
+
+                    <!-- Toggle Avatar Mode -->
+                    <div class="flex items-center gap-3 mb-4 bg-slate-700/50 p-4 rounded-lg">
+                        <input type="checkbox" x-model="formData.use_avatar" id="use_avatar"
+                            class="w-5 h-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500">
+                        <label for="use_avatar" class="cursor-pointer select-none">
+                            <div class="font-medium">Utiliser un avatar AI parlant</div>
+                            <div class="text-xs text-slate-400">
+                                Créez des vidéos UGC authentiques avec un personnage réaliste + lip-sync parfait
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Avatar Options (visible when enabled) -->
+                    <div x-show="formData.use_avatar" x-transition class="space-y-4">
+
+                        <!-- Avatar Selection Grid -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-2">Choisir un avatar</label>
+                            <div class="grid grid-cols-5 gap-3">
+                                <!-- Anna -->
+                                <div @click="formData.avatar_id = 'anna_casual_v2'"
+                                    :class="formData.avatar_id === 'anna_casual_v2' ? 'ring-4 ring-cyan-500' : 'ring-1 ring-slate-600'"
+                                    class="cursor-pointer rounded-lg overflow-hidden transition-all hover:scale-105">
+                                    <div
+                                        class="aspect-square bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
+                                        <span class="text-4xl">👩</span>
+                                    </div>
+                                    <p class="text-xs text-center py-2 bg-slate-700">Anna</p>
+                                </div>
+
+                                <!-- John -->
+                                <div @click="formData.avatar_id = 'john_professional_v2'"
+                                    :class="formData.avatar_id === 'john_professional_v2' ? 'ring-4 ring-cyan-500' : 'ring-1 ring-slate-600'"
+                                    class="cursor-pointer rounded-lg overflow-hidden transition-all hover:scale-105">
+                                    <div
+                                        class="aspect-square bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                                        <span class="text-4xl">👨‍💼</span>
+                                    </div>
+                                    <p class="text-xs text-center py-2 bg-slate-700">John</p>
+                                </div>
+
+                                <!-- Sarah -->
+                                <div @click="formData.avatar_id = 'sarah_friendly_v2'"
+                                    :class="formData.avatar_id === 'sarah_friendly_v2' ? 'ring-4 ring-cyan-500' : 'ring-1 ring-slate-600'"
+                                    class="cursor-pointer rounded-lg overflow-hidden transition-all hover:scale-105">
+                                    <div
+                                        class="aspect-square bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                                        <span class="text-4xl">👱‍♀️</span>
+                                    </div>
+                                    <p class="text-xs text-center py-2 bg-slate-700">Sarah</p>
+                                </div>
+
+                                <!-- Marcus -->
+                                <div @click="formData.avatar_id = 'marcus_tech_v2'"
+                                    :class="formData.avatar_id === 'marcus_tech_v2' ? 'ring-4 ring-cyan-500' : 'ring-1 ring-slate-600'"
+                                    class="cursor-pointer rounded-lg overflow-hidden transition-all hover:scale-105">
+                                    <div
+                                        class="aspect-square bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center">
+                                        <span class="text-4xl">👨‍💻</span>
+                                    </div>
+                                    <p class="text-xs text-center py-2 bg-slate-700">Marcus</p>
+                                </div>
+
+                                <!-- Lisa -->
+                                <div @click="formData.avatar_id = 'lisa_beauty_v2'"
+                                    :class="formData.avatar_id === 'lisa_beauty_v2' ? 'ring-4 ring-cyan-500' : 'ring-1 ring-slate-600'"
+                                    class="cursor-pointer rounded-lg overflow-hidden transition-all hover:scale-105">
+                                    <div
+                                        class="aspect-square bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center">
+                                        <span class="text-4xl">💁‍♀️</span>
+                                    </div>
+                                    <p class="text-xs text-center py-2 bg-slate-700">Lisa</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Voice Selection -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-2" for="voice_id">Choisir une voix</label>
+                            <select id="voice_id" name="voice_id" x-model="formData.voice_id"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-sm">
+                                <option value="en-US-JennyNeural">Jenny (US Female - Friendly)</option>
+                                <option value="en-US-GuyNeural">Guy (US Male - Professional)</option>
+                                <option value="en-GB-LibbyNeural">Libby (UK Female - Elegant)</option>
+                                <option value="en-US-AriaNeural">Aria (US Female - Energetic)</option>
+                                <option value="en-US-DavisNeural">Davis (US Male - Casual)</option>
+                            </select>
+                        </div>
+
+                        <!-- Format Selection -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-2">Format de la vidéo</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" @click="formData.aspect_ratio = '9:16'"
+                                    :class="formData.aspect_ratio === '9:16' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'"
+                                    class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    📱 TikTok<br><span class="text-xs">9:16</span>
+                                </button>
+                                <button type="button" @click="formData.aspect_ratio = '16:9'"
+                                    :class="formData.aspect_ratio === '16:9' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'"
+                                    class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    📺 YouTube<br><span class="text-xs">16:9</span>
+                                </button>
+                                <button type="button" @click="formData.aspect_ratio = '1:1'"
+                                    :class="formData.aspect_ratio === '1:1' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'"
+                                    class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    📷 Instagram<br><span class="text-xs">1:1</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Info Banner -->
+                        <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                            <div class="flex gap-2">
+                                <span class="text-cyan-400">ℹ️</span>
+                                <div class="text-xs text-slate-300">
+                                    <strong class="text-cyan-400">Mode Avatar AI:</strong>
+                                    Vidéo générée avec personnage réaliste + lip-sync parfait. Idéal pour UGC !
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ElevenLabs Voice Selection -->
+                <div class="mb-6 border-t border-slate-700 pt-6">
+                    <label class="block text-sm font-medium mb-3 flex items-center gap-2">
+                        Choix de la voix
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4" x-show="!formData.use_avatar">
+                        <!-- Rachel -->
+                        <div @click="formData.elevenlabs_voice = 'rachel'"
+                            :class="formData.elevenlabs_voice === 'rachel' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'rachel'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">👩</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'rachel' ? 'text-green-400' : 'text-slate-200'">
+                                        Rachel</div>
+                                    <div class="text-xs text-slate-400">Jeune & énergique</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bella -->
+                        <div @click="formData.elevenlabs_voice = 'bella'"
+                            :class="formData.elevenlabs_voice === 'bella' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'bella'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">🌸</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'bella' ? 'text-green-400' : 'text-slate-200'">
+                                        Bella</div>
+                                    <div class="text-xs text-slate-400">Douce & calme</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Adam -->
+                        <div @click="formData.elevenlabs_voice = 'adam'"
+                            :class="formData.elevenlabs_voice === 'adam' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'adam'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">👨‍💼</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'adam' ? 'text-green-400' : 'text-slate-200'">
+                                        Adam</div>
+                                    <div class="text-xs text-slate-400">Profond & autoritaire</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Josh -->
+                        <div @click="formData.elevenlabs_voice = 'josh'"
+                            :class="formData.elevenlabs_voice === 'josh' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'josh'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">🎯</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'josh' ? 'text-green-400' : 'text-slate-200'">
+                                        Josh</div>
+                                    <div class="text-xs text-slate-400">Jeune & décontracté</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Domi -->
+                        <div @click="formData.elevenlabs_voice = 'domi'"
+                            :class="formData.elevenlabs_voice === 'domi' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'domi'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">💪</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'domi' ? 'text-green-400' : 'text-slate-200'">
+                                        Domi</div>
+                                    <div class="text-xs text-slate-400">Forte & confiante</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Antoni -->
+                        <div @click="formData.elevenlabs_voice = 'antoni'"
+                            :class="formData.elevenlabs_voice === 'antoni' ? 'ring-2 ring-green-500 bg-green-900/40 relative' : 'ring-1 ring-slate-600 hover:bg-slate-700/50'"
+                            class="cursor-pointer rounded-lg p-4 transition-all">
+                            <div x-show="formData.elevenlabs_voice === 'antoni'"
+                                class="absolute top-2 right-2 text-green-400 bg-green-900 rounded-full p-0.5">✅</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">🎙️</div>
+                                <div>
+                                    <div class="font-medium"
+                                        :class="formData.elevenlabs_voice === 'antoni' ? 'text-green-400' : 'text-slate-200'">
+                                        Antoni</div>
+                                    <div class="text-xs text-slate-400">Polyvalent</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <!-- Advanced Subtitle Settings (Envato Style) -->
+                <div class="mb-6 bg-slate-800 rounded-xl p-4 border border-slate-700">
+                    <h3 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                        <span>✨</span> Style des Sous-titres
+                    </h3>
+
+                    <!-- Toggle Karaoke -->
+                    <div class="mb-4 flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                        <div>
+                            <span class="block font-medium text-sm">Mode "Karaoke" (Hormozi)</span>
+                            <span class="text-xs text-slate-400">Animation mot par mot dynamique</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer" for="subtitle_anim_active">
+                            <input type="checkbox" id="subtitle_anim_active" name="subtitle_anim_active"
+                                x-model="formData.subtitle_anim_active" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600">
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Font -->
+                        <div class="col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1" for="subtitle_style_font">Police</label>
+                            <select id="subtitle_style_font" name="subtitle_style_font"
+                                x-model="formData.subtitle_style_font"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+                                <option value="Montserrat-Bold">Montserrat Bold (Moderne)</option>
+                                <option value="Arial-Bold">Arial Bold (Classique)</option>
+                            </select>
+                        </div>
+
+                        <!-- Size -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1" for="subtitle_style_size">Taille</label>
+                            <input type="number" id="subtitle_style_size" name="subtitle_style_size"
+                                x-model="formData.subtitle_style_size" min="40" max="150"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm" />
+                        </div>
+
+                        <!-- Stroke -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1" for="subtitle_style_stroke">Contour
+                                (px)</label>
+                            <input type="number" id="subtitle_style_stroke" name="subtitle_style_stroke"
+                                x-model="formData.subtitle_style_stroke" min="0" max="10"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm" />
+                        </div>
+
+                        <!-- Text Color -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1" for="subtitle_style_color">Couleur
+                                Texte</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="subtitle_style_color" name="subtitle_style_color"
+                                    x-model="formData.subtitle_style_color"
+                                    class="h-8 w-8 rounded cursor-pointer bg-transparent border-0 p-0" />
+                                <span class="text-xs text-slate-300 uppercase"
+                                    x-text="formData.subtitle_style_color"></span>
+                            </div>
+                        </div>
+
+                        <!-- Highlight Color (Karaoke Only) -->
+                        <div x-show="formData.subtitle_anim_active" x-transition>
+                            <label class="block text-xs text-cyan-400 mb-1 font-bold"
+                                for="subtitle_anim_highlight">Couleur Active ✨</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="subtitle_anim_highlight" name="subtitle_anim_highlight"
+                                    x-model="formData.subtitle_anim_highlight"
+                                    class="h-8 w-8 rounded cursor-pointer bg-transparent border-0 p-0" />
+                                <span class="text-xs text-slate-300 uppercase"
+                                    x-text="formData.subtitle_anim_highlight"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <button type="submit"
+                    class="w-full cyan-gradient hover:opacity-90 text-slate-900 font-bold py-4 px-8 rounded-xl transition-all text-lg shadow-lg">
+                    🎬 Générer la Vidéo
+                </button>
+            </form>
+        </div>
+
+        <!-- Generation Progress -->
+        <div x-show="generating" class="bg-slate-800 rounded-xl p-8">
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4 animate-bounce">🎬</div>
+                <h2 class="text-2xl font-bold mb-2">Génération en cours...</h2>
+                <p class="text-slate-400" x-text="progressMessage"></p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="bg-slate-700 rounded-full h-4 overflow-hidden mb-4">
+                <div class="cyan-gradient h-full transition-all duration-500" :style="`width: ${progress}%`"></div>
+            </div>
+
+            <p class="text-center text-slate-400 text-sm">
+                <span x-text="progress"></span>% - Temps estimé: 2-3 minutes
+            </p>
+
+            <!-- Generation Steps -->
+            <div class="mt-8 space-y-3">
+                <div class="flex items-center gap-3" :class="progress >= 10 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 10 ? '✅' : '⏳'"></span>
+                    <span>Génération de l'idée virale</span>
+                </div>
+                <div class="flex items-center gap-3" :class="progress >= 25 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 25 ? '✅' : '⏳'"></span>
+                    <span>Écriture du script</span>
+                </div>
+                <div class="flex items-center gap-3" :class="progress >= 40 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 40 ? '✅' : '⏳'"></span>
+                    <span>Génération de la voix off (Edge TTS)</span>
+                </div>
+                <div class="flex items-center gap-3" :class="progress >= 55 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 55 ? '✅' : '⏳'"></span>
+                    <span>Transcription Whisper (sous-titres)</span>
+                </div>
+                <div class="flex items-center gap-3" :class="progress >= 70 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 70 ? '✅' : '⏳'"></span>
+                    <span>Téléchargement vidéo Pexels HD</span>
+                </div>
+                <div class="flex items-center gap-3" :class="progress >= 90 ? 'text-cyan-400' : 'text-slate-500'">
+                    <span x-text="progress >= 90 ? '✅' : '⏳'"></span>
+                    <span>Assemblage final (vidéo + audio + sous-titres)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Generated Success -->
+        <div x-show="videoGenerated" class="bg-slate-800 rounded-xl p-8">
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4">🎉</div>
+                <h2 class="text-3xl font-bold mb-2">Vidéo générée avec succès !</h2>
+                <p class="text-slate-400">Votre vidéo TikTok est prête</p>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="bg-slate-900 rounded-lg p-4 mb-6">
+                <video x-show="videoId" id="generatedVideo" controls class="w-full max-w-md mx-auto rounded-lg"
+                    x-init="if (videoId) { $el.src = `/api/videos/${videoId}/download`; $el.load(); }">
+                    <source :src="`/api/videos/${videoId}/download`" type="video/mp4">
+                </video>
+            </div>
+
+            <!-- Video Details -->
+            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div class="bg-slate-700 rounded-lg p-3">
+                    <p class="text-slate-400 mb-1">Thème</p>
+                    <p class="font-semibold" x-text="formData.theme"></p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-3">
+                    <p class="text-slate-400 mb-1">Durée</p>
+                    <p class="font-semibold" x-text="videoDuration.toFixed(1) + 's'"></p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-3">
+                    <p class="text-slate-400 mb-1">Sous-titres</p>
+                    <p class="font-semibold" x-text="subtitleCount + ' segments'"></p>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-3">
+                    <p class="text-slate-400 mb-1">Format</p>
+                    <p class="font-semibold">9:16 (TikTok)</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-4">
+                <a :href="`/api/videos/${videoId}/download?force_download=true`" target="_blank" download
+                    class="bg-blue-600 hover:bg-blue-700 text-center font-bold py-3 px-6 rounded-lg transition-all">
+                    📥 Télécharger
+                </a>
+                <button @click="showPublishForm = true"
+                    class="cyan-gradient hover:opacity-90 text-slate-900 font-bold py-3 px-6 rounded-lg transition-all">
+                    📤 Publier sur TikTok
+                </button>
+            </div>
+
+            <button @click="reset"
+                class="w-full mt-4 bg-slate-700 hover:bg-slate-600 py-3 px-6 rounded-lg transition-all">
+                🔄 Générer une nouvelle vidéo
+            </button>
+        </div>
+
+        <!-- Publish Form Modal -->
+        <div x-show="showPublishForm" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div class="bg-slate-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Publishing (progress) -->
+                <div x-show="publishStatus.status === 'uploading'">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4 animate-bounce">📤</div>
+                        <h3 class="text-2xl font-bold mb-2">Publication en cours...</h3>
+                        <p class="text-slate-400" x-text="publishStatus.message"></p>
+                    </div>
+
+                    <div class="bg-slate-700 rounded-full h-4 overflow-hidden mb-4">
+                        <div class="bg-cyan-500 h-full transition-all duration-500"
+                            :style="`width: ${publishStatus.progress}%`"></div>
+                    </div>
+
+                    <p class="text-center text-sm text-slate-400">
+                        <span x-text="publishStatus.progress"></span>% - Cela peut prendre 1-2 minutes
+                    </p>
+                </div>
+
+                <!-- Success -->
+                <div x-show="publishStatus.status === 'completed'">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">✅</div>
+                        <h3 class="text-2xl font-bold mb-2">Publié avec succès !</h3>
+                        <p class="text-slate-400">Votre vidéo est maintenant sur TikTok</p>
+
+                        <a x-show="publishStatus.video_url" :href="publishStatus.video_url" target="_blank"
+                            class="inline-block mt-4 text-cyan-400 hover:text-cyan-300">
+                            Voir sur TikTok →
+                        </a>
+                    </div>
+
+                    <button @click="closePublishModal" class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg">
+                        Fermer
+                    </button>
+                </div>
+
+                <!-- Error -->
+                <div x-show="publishStatus.status === 'error'">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-2xl font-bold mb-2">Erreur de publication</h3>
+                        <p class="text-red-400" x-text="publishStatus.message"></p>
+                    </div>
+
+                    <button @click="closePublishModal" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-lg">
+                        Fermer
+                    </button>
+                </div>
+
+                <!-- Publish Form (initial state) -->
+                <div x-show="publishStatus.status === 'not_started' || publishStatus.status === ''">
+                    <h3 class="text-2xl font-bold mb-6">📤 Publier sur TikTok</h3>
+
+                    <form @submit.prevent="publishToTikTok">
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2" for="publish_description">
+                                Description
+                                <span class="text-slate-400" x-text="`(${publishForm.description.length}/300)`"></span>
+                            </label>
+                            <textarea id="publish_description" name="publish_description"
+                                x-model="publishForm.description" maxlength="300" rows="4"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                placeholder="Décrivez votre vidéo..."></textarea>
+                        </div>
+
+                        <!-- Hashtags -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2" for="publish_hashtags">Hashtags</label>
+                            <input type="text" id="publish_hashtags" name="publish_hashtags"
+                                x-model="publishForm.hashtags"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3"
+                                placeholder="#motivation #selfimprovement #mindset">
+                            <p class="text-xs text-slate-400 mt-1">Séparez les hashtags par des espaces</p>
+                        </div>
+
+                        <!-- Privacy -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-2" for="publish_privacy">Confidentialité</label>
+                            <select id="publish_privacy" name="publish_privacy" x-model="publishForm.privacy"
+                                class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3">
+                                <option value="public">🌍 Public</option>
+                                <option value="friends">👥 Amis</option>
+                                <option value="private">🔒 Privé</option>
+                            </select>
+                        </div>
+
+                        <!-- Schedule Toggle -->
+                        <div class="mb-4 bg-slate-700 rounded-lg p-4">
+                            <label class="flex items-center gap-3 cursor-pointer" for="publish_schedule">
+                                <input type="checkbox" id="publish_schedule" name="publish_schedule"
+                                    x-model="publishForm.schedule"
+                                    class="w-5 h-5 rounded bg-slate-600 border-slate-500">
+                                <span>📅 Planifier la publication</span>
+                            </label>
+
+                            <div x-show="publishForm.schedule" class="mt-4">
+                                <label for="publish_scheduled_time" class="sr-only">Date et heure de publication</label>
+                                <input type="datetime-local" id="publish_scheduled_time" name="publish_scheduled_time"
+                                    x-model="publishForm.scheduled_time"
+                                    class="w-full bg-slate-600 border border-slate-500 rounded-lg px-4 py-2">
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button type="button" @click="showPublishForm = false"
+                                class="bg-slate-700 hover:bg-slate-600 py-3 rounded-lg">
+                                Annuler
+                            </button>
+                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-bold">
+                                <span x-text="publishForm.schedule ? '📅 Planifier' : '🚀 Publier'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateApp() {
+            return {
+                formData: {
+                    theme: 'motivation',
+                    subtitle_color: 'cyan', // Deprecated but kept
+                    subtitle_size: 60,      // Deprecated but kept
+
+                    // Advanced Subtitle Config
+                    subtitle_anim_active: true,
+                    subtitle_style_font: 'Montserrat-Bold',
+                    subtitle_style_size: 75,
+                    subtitle_style_stroke: 6,
+                    subtitle_style_color: '#FFFFFF',
+                    subtitle_anim_highlight: '#00FF00', // Green standard
+
+                    // Avatar AI fields
+                    use_avatar: false,
+                    avatar_id: 'anna_casual_v2',
+                    voice_id: 'en-US-JennyNeural',
+                    aspect_ratio: '9:16',
+                    elevenlabs_voice: 'rachel'  // Voix ElevenLabs par défaut
+                },
+                generating: false,
+                videoGenerated: false,
+                progress: 0,
+                progressMessage: 'Initialisation...',
+                requestId: null,
+                videoId: null,
+                videoPath: null,
+                videoDuration: 0,
+                subtitleCount: 0,
+                showPublishForm: false,
+                publishForm: {
+                    description: '',
+                    hashtags: '#motivation #selfimprovement #mindset',
+                    privacy: 'public',
+                    schedule: false,
+                    scheduled_time: ''
+                },
+                publishStatus: {
+                    status: '', // '', 'uploading', 'completed', 'error'
+                    progress: 0,
+                    message: '',
+                    video_url: null
+                },
+
+                async startGeneration() {
+                    this.generating = true;
+                    this.progress = 0;
+
+                    try {
+                        // Construct API Payload with SubtitleConfig
+                        const payload = {
+                            ...this.formData,
+                            subtitle_config: {
+                                style: {
+                                    font_family: this.formData.subtitle_style_font,
+                                    font_size: parseInt(this.formData.subtitle_style_size),
+                                    text_color: this.formData.subtitle_style_color,
+                                    stroke_width: parseInt(this.formData.subtitle_style_stroke),
+                                    stroke_color: '#000000',
+                                    shadow_color: 'rgba(0,0,0,0.5)',
+                                    shadow_offset: [3, 3]
+                                },
+                                animation: {
+                                    type: this.formData.subtitle_anim_active ? 'karaoke' : 'static',
+                                    highlight_color: this.formData.subtitle_anim_highlight,
+                                    word_by_word: true
+                                },
+                                position: {
+                                    margin_bottom: 300,
+                                    alignment: 'center'
+                                },
+                                background: {
+                                    enabled: false
+                                }
+                            }
+                        };
+
+                        // Start generation
+                        const response = await fetch('/api/videos/generate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await response.json();
+                        this.requestId = data.request_id;
+
+                        // Poll for status
+                        this.pollStatus();
+                    } catch (error) {
+                        console.error('Generation error:', error);
+                        alert('Erreur lors de la génération');
+                        this.generating = false;
+                    }
+                },
+
+                async pollStatus() {
+                    const interval = setInterval(async () => {
+                        try {
+                            const response = await fetch(`/api/videos/generate/status/${this.requestId}`);
+                            const data = await response.json();
+                            const status = data.status;
+
+                            this.progress = status.progress || 0;
+                            this.progressMessage = status.message || 'Génération en cours...';
+
+                            if (status.status === 'completed') {
+                                clearInterval(interval);
+                                this.videoId = status.video_id;
+                                this.videoPath = status.video_path;
+
+                                // Load video details
+                                await this.loadVideoDetails();
+
+                                this.generating = false;
+                                this.videoGenerated = true;
+                            } else if (status.status === 'error') {
+                                clearInterval(interval);
+                                alert('Erreur: ' + status.message);
+                                this.generating = false;
+                            }
+                        } catch (error) {
+                            console.error('Poll error:', error);
+                        }
+                    }, 2000); // Poll every 2 seconds
+                },
+
+                async loadVideoDetails() {
+                    try {
+                        const response = await fetch(`/api/videos/${this.videoId}`);
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.videoDuration = data.video.duration || 0;
+                            this.subtitleCount = data.video.subtitle_count || 0;
+
+                            // Force video player to reload
+                            this.$nextTick(() => {
+                                const video = document.getElementById('generatedVideo');
+                                if (video) {
+                                    video.src = `/api/videos/${this.videoId}/download`;
+                                    video.load();
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error loading video details:', error);
+                    }
+                },
+
+                async publishToTikTok() {
+                    this.publishStatus = {
+                        status: 'uploading',
+                        progress: 5,
+                        message: 'Démarrage de la publication...'
+                    };
+
+                    try {
+                        const response = await fetch('/api/tiktok/publish', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                video_id: this.videoId,
+                                description: this.publishForm.description,
+                                hashtags: this.publishForm.hashtags,
+                                privacy: this.publishForm.privacy,
+                                publish_now: !this.publishForm.schedule,
+                                scheduled_time: this.publishForm.scheduled_time
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (this.publishForm.schedule) {
+                            // Scheduled publication
+                            this.publishStatus = {
+                                status: 'completed',
+                                progress: 100,
+                                message: 'Publication planifiée avec succès !'
+                            };
+                        } else {
+                            // Poll for status
+                            this.pollPublishStatus();
+                        }
+                    } catch (error) {
+                        console.error('Publish error:', error);
+                        this.publishStatus = {
+                            status: 'error',
+                            progress: 0,
+                            message: 'Erreur: ' + error.message
+                        };
+                    }
+                },
+
+                async pollPublishStatus() {
+                    const interval = setInterval(async () => {
+                        try {
+                            const response = await fetch(`/api/tiktok/publish/status/${this.videoId}`);
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.publishStatus = data.status;
+
+                                if (data.status.status === 'completed' || data.status.status === 'error') {
+                                    clearInterval(interval);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Poll error:', error);
+                        }
+                    }, 3000); // Poll every 3 seconds
+                },
+
+                closePublishModal() {
+                    this.showPublishForm = false;
+                    this.publishStatus = {
+                        status: '',
+                        progress: 0,
+                        message: ''
+                    };
+                },
+
+                reset() {
+                    this.generating = false;
+                    this.videoGenerated = false;
+                    this.progress = 0;
+                    this.videoId = null;
+                    this.videoPath = null;
+                    this.showPublishForm = false;
+                    this.publishStatus = { status: '', progress: 0, message: '' };
+                    this.formData = {
+                        theme: 'motivation',
+                        subtitle_color: 'cyan',
+                        subtitle_size: 60,
+                        use_avatar: false,
+                        avatar_id: 'anna_casual_v2',
+                        voice_id: 'en-US-JennyNeural',
+                        aspect_ratio: '9:16',
+                        elevenlabs_voice: 'rachel'
+                    };
+                    this.publishForm = {
+                        description: '',
+                        hashtags: '#motivation #selfimprovement #mindset',
+                        privacy: 'public',
+                        schedule: false,
+                        scheduled_time: ''
+                    };
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -10,7 +10,23 @@ from typing import Tuple, Optional
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, AudioFileClip
+from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, AudioFileClip
 import pysrt
+from modules.config_schemas import SubtitleConfig
+
+def hex_to_rgba(hex_color: str, opacity: float = 1.0) -> Tuple[int, int, int, int]:
+    """Convertit hex (#RRGGBB) en tuple RGBA (R, G, B, A)"""
+    hex_color = hex_color.lstrip('#')
+    if len(hex_color) == 3:
+        hex_color = ''.join([c*2 for c in hex_color])
+    
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    a = int(opacity * 255)
+    
+    return (r, g, b, a)
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +152,9 @@ def assemble_complete_video(
     subtitle_color: Tuple[int, int, int, int] = (0, 255, 255, 255),
     subtitle_size: int = 85,
     outline_width: int = 5,
-    position_from_bottom: int = 300
+    position_from_bottom: int = 300,
+    subtitle_config: Optional[SubtitleConfig] = None,
+    subtitle_segments: Optional[list] = None
 ) -> str:
     """
     Assembler vidéo complète: vidéo Pexels + audio + sous-titres
@@ -154,6 +172,32 @@ def assemble_complete_video(
     Returns:
         Chemin de la vidéo finale
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Si une config avancée est fournie, l'utiliser pour surcharger les valeurs par défaut
+    if subtitle_config:
+        try:
+            # Conversion couleur texte
+            if subtitle_config.style.text_color:
+                subtitle_color = hex_to_rgba(subtitle_config.style.text_color)
+            
+            # Taille police
+            if subtitle_config.style.font_size:
+                subtitle_size = subtitle_config.style.font_size
+                
+            # Position
+            if subtitle_config.position.margin_bottom:
+                position_from_bottom = subtitle_config.position.margin_bottom
+                
+            # Outline
+            if subtitle_config.style.stroke_width is not None:
+                outline_width = subtitle_config.style.stroke_width
+                
+            logger.info("🎨 Styles avancés appliqués depuis la config")
+        except Exception as e:
+            logger.error(f"⚠️ Erreur application config styles: {e}")
+
     logger.info("🎬 Assemblage vidéo complète avec Pexels + sous-titres")
     
     # Charger vidéo Pexels
@@ -197,27 +241,40 @@ def assemble_complete_video(
     logger.info(f"✨ Création de {len(subs)} sous-titres")
     subtitle_clips = []
     
-    for i, sub in enumerate(subs, 1):
-        start = (sub.start.hours * 3600 + sub.start.minutes * 60 + 
-                sub.start.seconds + sub.start.milliseconds / 1000.0)
-        end = (sub.end.hours * 3600 + sub.end.minutes * 60 + 
-              sub.end.seconds + sub.end.milliseconds / 1000.0)
-        
-        # Créer image sous-titre
-        img_array = create_subtitle_image(
-            sub.text,
-            font_size=subtitle_size,
-            text_color=subtitle_color,
-            outline_width=outline_width
-        )
-        
-        # Créer clip
-        clip = ImageClip(img_array)
-        clip = clip.with_position(('center', video.size[1] - position_from_bottom))
-        clip = clip.with_start(start)
-        clip = clip.with_duration(end - start)
-        
-        subtitle_clips.append(clip)
+    # 1. OPTION EN HAUTEUR: Moteur Karaoke (Envato Style)
+    if subtitle_config and subtitle_segments:
+        try:
+            from modules.subtitle_animator import create_karaoke_clips
+            logger.info("✨ Utilisation du moteur de sous-titres avancé (Karaoke/Hormozi)")
+            subtitle_clips = create_karaoke_clips(subtitle_segments, video.size, subtitle_config)
+        except Exception as e:
+            logger.error(f"❌ Erreur moteur avancé: {e}")
+            subtitle_clips = []
+
+    # 2. FALLBACK: Moteur Standard (Statique)
+    if not subtitle_clips:
+        logger.info("ℹ️  Utilisation du moteur de sous-titres standard (Statique)")
+        for i, sub in enumerate(subs, 1):
+            start = (sub.start.hours * 3600 + sub.start.minutes * 60 + 
+                    sub.start.seconds + sub.start.milliseconds / 1000.0)
+            end = (sub.end.hours * 3600 + sub.end.minutes * 60 + 
+                  sub.end.seconds + sub.end.milliseconds / 1000.0)
+            
+            # Créer image sous-titre
+            img_array = create_subtitle_image(
+                sub.text,
+                font_size=subtitle_size,
+                text_color=subtitle_color,
+                outline_width=outline_width
+            )
+            
+            # Créer clip
+            clip = ImageClip(img_array)
+            clip = clip.with_position(('center', video.size[1] - position_from_bottom))
+            clip = clip.with_start(start)
+            clip = clip.with_duration(end - start)
+            
+            subtitle_clips.append(clip)
     
     # Composer vidéo finale
     logger.info("🎨 Composition vidéo + sous-titres")

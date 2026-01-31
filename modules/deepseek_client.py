@@ -6,6 +6,7 @@ Alternative gratuite et illimitée à Gemini
 import json
 import logging
 import requests
+import json_repair
 from typing import Dict, Optional
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
 
@@ -90,6 +91,7 @@ CONTRAINTES:
 - Angle unique et contre-intuitif
 - Format "faceless" (pas de visage)
 - Potentiel viral élevé
+- LANGUE: Français PARFAIT (orthographe, grammaire, syntaxe irréprochables). Évite les anglicismes.
 
 IMPORTANT: Ajoute des mots-clés pour rechercher des vidéos stock (Pexels).
 Exemples: "workspace", "typing", "coffee", "sunset", "city"
@@ -112,17 +114,8 @@ Exemples de hooks viraux:
         try:
             response = self._call_api(prompt, temperature=0.9, max_tokens=500)
             
-            # Extraire JSON
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            
-            idea = json.loads(response)
+            # Parsing robuste avec json_repair
+            idea = json_repair.loads(response)
             
             # Validation
             required = ["hook", "angle", "concept", "cta", "video_keywords"]
@@ -160,8 +153,9 @@ CTA: {idea['cta']}
 CONTRAINTES:
 - Durée: 20-30 secondes à voix haute
 - Phrases ultra-courtes (5-8 mots max)
-- Ton naturel et conversationnel
+- Ton naturel et conversationnel (style oral)
 - Rythme rapide et dynamique
+- LANGUE: Français PARFAIT. Orthographe et syntaxe impeccables. Utilise un langage courant mais correct. Pas de "tournures traduites de l'anglais".
 
 STRUCTURE:
 1. Hook (0-3s): Phrase choc
@@ -184,17 +178,8 @@ Réponds UNIQUEMENT en JSON valide:
         try:
             response = self._call_api(prompt, temperature=0.7, max_tokens=1500)
             
-            # Extraire JSON
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            
-            script = json.loads(response)
+            # Parsing robuste avec json_repair
+            script = json_repair.loads(response)
             
             # Validation
             required = ["script", "duration_estimate", "segments"]
@@ -227,6 +212,8 @@ SCRIPT: {script['script']}
 DURÉE: {script['duration_estimate']}s
 
 Découpe en segments courts (2-4 mots max par ligne) pour lisibilité mobile.
+Vérifie que les coupures de mots sont logiques (ne pas couper "l' | ami").
+ORTHOGRAPHE: Corrige toute faute éventuelle dans le script source.
 
 Réponds UNIQUEMENT en JSON valide:
 {{
@@ -240,17 +227,8 @@ Réponds UNIQUEMENT en JSON valide:
         try:
             response = self._call_api(prompt, temperature=0.5, max_tokens=1000)
             
-            # Extraire JSON
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            
-            subtitles = json.loads(response)
+            # Parsing robuste avec json_repair
+            subtitles = json_repair.loads(response)
             
             if "subtitles" not in subtitles:
                 raise ValueError("Clé 'subtitles' manquante")
@@ -288,6 +266,7 @@ CONTRAINTES:
 - Intrigant et engageant
 - 3-5 hashtags pertinents
 - Appel à l'action
+- LANGUE: Français naturel et sans faute.
 
 Réponds UNIQUEMENT en JSON valide:
 {{
@@ -299,17 +278,8 @@ Réponds UNIQUEMENT en JSON valide:
         try:
             response = self._call_api(prompt, temperature=0.7, max_tokens=300)
             
-            # Extraire JSON
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            
-            description = json.loads(response)
+            # Parsing robuste avec json_repair
+            description = json_repair.loads(response)
             
             required = ["description", "hashtags"]
             if not all(key in description for key in required):

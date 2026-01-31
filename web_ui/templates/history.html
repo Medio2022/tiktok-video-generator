@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Historique - TikTok Generator</title>
+
+    <link rel="stylesheet" href="/static/css/output.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+    <div x-data="historyApp()" x-init="init()" class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="/" class="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2 mb-4">
+                ← Retour au Dashboard
+            </a>
+            <h1 class="text-4xl font-bold mb-2">📊 Historique des Vidéos</h1>
+            <p class="text-slate-400">Parcourez et gérez toutes vos vidéos générées</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-slate-800 rounded-xl p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Thème</label>
+                    <select x-model="filters.theme" @change="loadVideos"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2">
+                        <option value="">Tous</option>
+                        <option value="motivation">Motivation</option>
+                        <option value="productivite">Productivité</option>
+                        <option value="tech">Tech</option>
+                        <option value="business">Business</option>
+                        <option value="sante">Santé</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Statut</label>
+                    <select x-model="filters.published" @change="loadVideos"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2">
+                        <option value="">Tous</option>
+                        <option value="true">Publiées</option>
+                        <option value="false">Non publiées</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Tri</label>
+                    <select x-model="filters.sort" @change="loadVideos"
+                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2">
+                        <option value="created_at_desc">Plus récentes</option>
+                        <option value="created_at_asc">Plus anciennes</option>
+                        <option value="duration_desc">Durée (↓)</option>
+                        <option value="duration_asc">Durée (↑)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button @click="resetFilters" class="w-full bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">
+                        🔄 Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Grid -->
+        <div x-show="videos.length === 0" class="text-center text-slate-400 py-12 bg-slate-800 rounded-xl">
+            Aucune vidéo trouvée
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="video in videos" :key="video.id">
+                <div class="bg-slate-800 rounded-xl overflow-hidden hover:ring-2 hover:ring-cyan-500 transition-all">
+                    <!-- Video Thumbnail -->
+                    <div class="aspect-video bg-slate-700 flex items-center justify-center">
+                        <span class="text-6xl">🎬</span>
+                    </div>
+
+                    <!-- Video Info -->
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm px-3 py-1 bg-cyan-600 rounded-full capitalize"
+                                x-text="video.theme"></span>
+                            <span class="text-xs text-slate-400" x-text="`${video.duration.toFixed(1)}s`"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-sm text-slate-400"><span x-text="video.subtitle_count"></span> sous-titres
+                            </p>
+                            <p class="text-xs text-slate-500" x-text="formatDate(video.created_at)"></p>
+                        </div>
+
+                        <div class="mb-4">
+                            <span class="text-xs px-2 py-1 rounded"
+                                :class="video.published ? 'bg-green-600' : 'bg-yellow-600'"
+                                x-text="video.published ? '✅ Publiée' : '⏳ Non publiée'"></span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <a :href="`/api/videos/${video.id}/download?force_download=true`" target="_blank" download
+                                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-bold transition-all">
+                                📥 Télécharger
+                            </a>
+                            <button @click.prevent="deleteVideo(video.id)"
+                                class="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-sm">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Pagination -->
+        <div x-show="totalVideos > perPage" class="mt-8 flex justify-center gap-2">
+            <button @click="previousPage" :disabled="currentPage === 1"
+                class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50">
+                ← Précédent
+            </button>
+            <span class="px-4 py-2 bg-slate-800 rounded-lg">
+                Page <span x-text="currentPage"></span> / <span x-text="totalPages"></span>
+            </span>
+            <button @click="nextPage" :disabled="currentPage >= totalPages"
+                class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-50">
+                Suivant →
+            </button>
+        </div>
+
+        <!-- Custom Delete Confirmation Modal -->
+        <div x-show="deleteModal.show" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
+            @click.self="deleteModal.show = false">
+            <div class="bg-slate-800 rounded-xl p-6 max-w-md w-full">
+                <h3 class="text-xl font-bold mb-4">⚠️ Confirmation</h3>
+                <p class="text-slate-300 mb-6">Êtes-vous sûr de vouloir supprimer cette vidéo ? Cette action est
+                    irréversible.</p>
+
+                <div class="flex gap-3">
+                    <button @click="confirmDelete()"
+                        class="flex-1 bg-red-600 hover:bg-red-700 py-2 px-4 rounded-lg font-bold">
+                        🗑️ Supprimer
+                    </button>
+                    <button @click="deleteModal.show = false"
+                        class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 px-4 rounded-lg font-bold">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function historyApp() {
+            return {
+                videos: [],
+                filters: {
+                    theme: '',
+                    published: '',
+                    sort: 'created_at_desc'
+                },
+                currentPage: 1,
+                perPage: 12,
+                totalVideos: 0,
+                deleteModal: {
+                    show: false,
+                    videoId: null
+                },
+
+                get totalPages() {
+                    return Math.ceil(this.totalVideos / this.perPage);
+                },
+
+                async init() {
+                    await this.loadVideos();
+                },
+
+                async loadVideos() {
+                    try {
+                        // Build query string
+                        const params = new URLSearchParams();
+                        if (this.filters.theme) params.append('theme', this.filters.theme);
+                        if (this.filters.published) params.append('published', this.filters.published);
+                        params.append('page', this.currentPage);
+                        params.append('per_page', this.perPage);
+
+                        const response = await fetch(`/api/videos?${params}`);
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.videos = data.videos;
+                            this.totalVideos = data.total || data.videos.length;
+                        }
+                    } catch (error) {
+                        console.error('Error loading videos:', error);
+                    }
+                },
+
+                formatDate(dateString) {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                },
+
+                deleteVideo(id) {
+                    this.deleteModal.videoId = id;
+                    this.deleteModal.show = true;
+                },
+
+                async confirmDelete() {
+                    const id = this.deleteModal.videoId;
+                    this.deleteModal.show = false;
+
+                    try {
+                        const response = await fetch(`/api/videos/${id}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            await this.loadVideos();
+                        } else {
+                            alert('Erreur lors de la suppression');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting video:', error);
+                        alert('Erreur lors de la suppression');
+                    }
+                },
+
+                resetFilters() {
+                    this.filters = {
+                        theme: '',
+                        published: '',
+                        sort: 'created_at_desc'
+                    };
+                    this.currentPage = 1;
+                    this.loadVideos();
+                },
+
+                nextPage() {
+                    if (this.currentPage < this.totalPages) {
+                        this.currentPage++;
+                        this.loadVideos();
+                    }
+                },
+
+                previousPage() {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.loadVideos();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

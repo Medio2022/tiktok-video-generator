@@ -1,12 +1,13 @@
 """
-Générateur de voix off avec alternatives GRATUITES
-Remplace Google Cloud TTS par des solutions sans coût
+Générateur de voix off avec alternatives GRATUITES + ELEVENLABS PREMIUM
+Remplace Google Cloud TTS par des solutions sans coût ou à faible coût
 """
 
 import logging
 from pathlib import Path
 from typing import Optional, Literal
 import asyncio
+import os
 
 from config import OUTPUT_DIR
 
@@ -14,20 +15,40 @@ logger = logging.getLogger(__name__)
 
 
 class VoiceGenerator:
-    """Générateur de voix avec plusieurs backends gratuits"""
+    """Générateur de voix avec plusieurs backends (gratuits et premium)"""
     
-    def __init__(self, backend: Literal["edge", "gtts", "pyttsx3"] = "edge"):
+    def __init__(
+        self, 
+        backend: Literal["auto", "elevenlabs", "edge", "gtts", "pyttsx3"] = "auto",
+        elevenlabs_voice: str = "rachel"
+    ):
         """
         Initialiser le générateur de voix
         
         Args:
             backend: Backend à utiliser
-                - "edge": Edge TTS (Microsoft) - GRATUIT, meilleure qualité
-                - "gtts": Google Translate TTS - GRATUIT, qualité moyenne
-                - "pyttsx3": TTS offline - GRATUIT, qualité basique
+                - "auto": Détection automatique (ElevenLabs > Edge TTS)
+                - "elevenlabs": ElevenLabs AI - PREMIUM ($0-5/mois)
+                - "edge": Edge TTS (Microsoft) - GRATUIT
+                - "gtts": Google Translate TTS - GRATUIT
+                - "pyttsx3": TTS offline - GRATUIT
+            elevenlabs_voice: Voix ElevenLabs (rachel, bella, adam, etc.)
         """
-        self.backend = backend
-        logger.info(f"🎤 Initialisation du générateur de voix: {backend}")
+        self.elevenlabs_voice = elevenlabs_voice
+        
+        # Auto-détection
+        if backend == "auto":
+            # Priorité: ElevenLabs (si clé API) > Edge TTS
+            if os.getenv('ELEVENLABS_API_KEY'):
+                self.backend = "elevenlabs"
+                logger.info("🎤 Auto-détection: ElevenLabs PREMIUM sélectionné")
+            else:
+                self.backend = "edge"
+                logger.info("🎤 Auto-détection: Edge TTS sélectionné (clé ElevenLabs non trouvée)")
+        else:
+            self.backend = backend
+        
+        logger.info(f"🎤 Initialisation du générateur de voix: {self.backend}")
     
     def generate(self, text: str, output_path: Optional[str] = None) -> tuple[str, float]:
         """
@@ -47,7 +68,9 @@ class VoiceGenerator:
         
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        if self.backend == "edge":
+        if self.backend == "elevenlabs":
+            return self._generate_elevenlabs(text, str(output_path))
+        elif self.backend == "edge":
             return self._generate_edge_tts(text, str(output_path))
         elif self.backend == "gtts":
             return self._generate_gtts(text, str(output_path))
@@ -55,6 +78,36 @@ class VoiceGenerator:
             return self._generate_pyttsx3(text, str(output_path))
         else:
             raise ValueError(f"Backend inconnu: {self.backend}")
+    
+    def _generate_elevenlabs(self, text: str, output_path: str) -> tuple[str, float]:
+        """
+        Générer avec ElevenLabs AI - PREMIUM
+        Voix ultra-réalistes, qualité supérieure
+        """
+        logger.info(f"🎤 Génération avec ElevenLabs PREMIUM ({self.elevenlabs_voice})...")
+        
+        try:
+            from modules.elevenlabs_voice import ElevenLabsVoiceGenerator
+        except ImportError:
+            raise ImportError(
+                "Module elevenlabs_voice non trouvé. Vérifiez modules/elevenlabs_voice.py"
+            )
+        
+        try:
+            generator = ElevenLabsVoiceGenerator()
+            audio_path, duration = generator.generate(
+                text=text,
+                output_path=output_path,
+                voice=self.elevenlabs_voice
+            )
+            
+            logger.info(f"✅ Voix ElevenLabs générée: {audio_path} ({duration:.1f}s)")
+            return audio_path, duration
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur ElevenLabs: {e}")
+            logger.info("⚠️  Fallback vers Edge TTS...")
+            return self._generate_edge_tts(text, output_path)
     
     def _generate_edge_tts(self, text: str, output_path: str) -> tuple[str, float]:
         """

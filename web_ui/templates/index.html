@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 TikTok Video Generator</title>
+
+    <link rel="stylesheet" href="/static/css/output.css">
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <!-- Custom styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .cyan-gradient {
+            background: linear-gradient(135deg, #00ffff 0%, #00d4d4 100%);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+        }
+
+        .progress-bar {
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 100%;
+            }
+
+            100% {
+                width: 0%;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+    <div x-data="dashboardApp()" class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-5xl font-bold mb-2">
+                        🎬 TikTok Video Generator
+                    </h1>
+                    <p class="text-slate-400 text-lg">
+                        AI-powered video generation with Whisper, DeepSeek, and Edge TTS
+                    </p>
+                </div>
+
+                <a href="/config"
+                    class="bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-lg transition-all flex items-center gap-2">
+                    ⚙️ Configuration
+                </a>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Videos Generated -->
+            <div class="bg-slate-800 rounded-xl p-6 card-hover transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-400 font-medium">Videos générées</h3>
+                    <span class="text-4xl">🎬</span>
+                </div>
+                <p class="text-4xl font-bold" x-text="stats.total_videos">0</p>
+                <p class="text-sm text-slate-400 mt-2">Total créées</p>
+            </div>
+
+            <!-- Videos Published -->
+            <div class="bg-slate-800 rounded-xl p-6 card-hover transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-400 font-medium">Publiées</h3>
+                    <span class="text-4xl">📤</span>
+                </div>
+                <p class="text-4xl font-bold" x-text="stats.published_count">0</p>
+                <p class="text-sm text-slate-400 mt-2">Sur TikTok</p>
+            </div>
+
+            <!-- Scheduled -->
+            <div class="bg-slate-800 rounded-xl p-6 card-hover transition-all">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-400 font-medium">Planifiées</h3>
+                    <span class="text-4xl">⏰</span>
+                </div>
+                <p class="text-4xl font-bold" x-text="stats.scheduled_count">0</p>
+                <p class="text-sm text-slate-400 mt-2">À publier</p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <a href="/generate"
+                class="cyan-gradient hover:opacity-90 text-slate-900 font-bold py-6 px-8 rounded-xl transition-all text-xl shadow-lg hover:shadow-2xl text-center">
+                🎬 Générer Nouvelle Vidéo
+            </a>
+
+            <a href="/history"
+                class="bg-slate-800 hover:bg-slate-700 font-bold py-6 px-8 rounded-xl transition-all text-xl text-center">
+                📊 Voir l'Historique
+            </a>
+        </div>
+
+        <!-- Recent Videos -->
+        <div class="bg-slate-800 rounded-xl p-6" x-show="currentView === 'dashboard'">
+            <h2 class="text-2xl font-bold mb-6">📹 Vidéos Récentes</h2>
+
+            <div class="space-y-4" x-show="videos.length > 0">
+                <template x-for="video in videos.slice(0, 5)" :key="video.id">
+                    <div class="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="font-semibold mb-1" x-text="video.filename.split('/').pop()"></h3>
+                                <div class="flex gap-4 text-sm text-slate-400">
+                                    <span>🎨 <span x-text="video.theme"></span></span>
+                                    <span>⏱️ <span x-text="video.duration?.toFixed(1) + 's'"></span></span>
+                                    <span>💬 <span x-text="video.subtitle_count"></span> sous-titres</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button @click="openVideoModal(video)"
+                                    class="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                    👁️ Voir
+                                </button>
+                                <a :href="`/api/videos/${video.id}/download`" download
+                                    class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                    📥 Télécharger
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="videos.length === 0" class="text-center py-12 text-slate-400">
+                <p class="text-xl mb-4">🎬 Aucune vidéo générée</p>
+                <p>Créez votre première vidéo pour commencer !</p>
+            </div>
+        </div>
+
+        <!-- Video Preview Modal -->
+        <div x-show="videoModal.show" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
+            @click.self="closeVideoModal()">
+            <div class="bg-slate-800 rounded-xl p-3 max-w-md w-full">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-lg font-bold truncate flex-1" x-text="videoModal.video?.filename?.split('/').pop()">
+                        Vidéo</h3>
+                    <button @click="closeVideoModal()"
+                        class="text-slate-400 hover:text-white text-xl ml-2 flex-shrink-0">×</button>
+                </div>
+
+                <div class="bg-slate-900 rounded-lg p-1 mb-2">
+                    <video x-ref="modalVideo" x-show="videoModal.video" controls autoplay class="w-full rounded">
+                        <source :src="`/api/videos/${videoModal.video?.id}/download`" type="video/mp4">
+                    </video>
+                </div>
+
+                <!-- Compact metadata badges -->
+                <div class="flex gap-1 mb-2 text-xs flex-wrap">
+                    <span class="bg-slate-700 rounded px-2 py-1">
+                        🎨 <span x-text="videoModal.video?.theme"></span>
+                    </span>
+                    <span class="bg-slate-700 rounded px-2 py-1">
+                        ⏱️ <span x-text="videoModal.video?.duration?.toFixed(1) + 's'"></span>
+                    </span>
+                    <span class="bg-slate-700 rounded px-2 py-1">
+                        💬 <span x-text="videoModal.video?.subtitle_count"></span>
+                    </span>
+                </div>
+
+                <div class="flex gap-2">
+                    <a :href="`/api/videos/${videoModal.video?.id}/download`" download
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 py-1.5 rounded-lg text-center font-bold text-xs">
+                        📥 Télécharger
+                    </a>
+                    <button @click="closeVideoModal()"
+                        class="flex-1 bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg font-bold text-xs">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate View (placeholder for now) -->
+        <div x-show="currentView === 'generate'" class="bg-slate-800 rounded-xl p-8">
+            <h2 class="text-3xl font-bold mb-6">🎬 Générer Nouvelle Vidéo</h2>
+            <p class="text-slate-400 mb-4">Interface de génération à venir...</p>
+            <button @click="currentView = 'dashboard'" class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg">
+                ← Retour au Dashboard
+            </button>
+        </div>
+
+        <!-- History View (placeholder) -->
+        <div x-show="currentView === 'history'" class="bg-slate-800 rounded-xl p-8">
+            <h2 class="text-3xl font-bold mb-6">📊 Historique des Vidéos</h2>
+            <p class="text-slate-400 mb-4">Historique détaillé à venir...</p>
+            <button @click="currentView = 'dashboard'" class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg">
+                ← Retour au Dashboard
+            </button>
+        </div>
+
+        <!-- Config View (placeholder) -->
+        <div x-show="currentView === 'config'" class="bg-slate-800 rounded-xl p-8">
+            <h2 class="text-3xl font-bold mb-6">⚙️ Configuration</h2>
+            <p class="text-slate-400 mb-4">Panneau de configuration à venir...</p>
+            <button @click="currentView = 'dashboard'" class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg">
+                ← Retour au Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function dashboardApp() {
+            return {
+                currentView: 'dashboard',
+                stats: {
+                    total_videos: 0,
+                    published_count: 0,
+                    scheduled_count: 0,
+                    recent_videos: []
+                },
+                videoModal: {
+                    show: false,
+                    video: null
+                },
+
+                get videos() {
+                    return this.stats.recent_videos || [];
+                },
+
+                async init() {
+                    await this.loadStats();
+                },
+
+                async loadStats() {
+                    try {
+                        const response = await fetch('/api/stats');
+                        const data = await response.json();
+                        if (data.success) {
+                            this.stats = data.stats;
+                        }
+                    } catch (error) {
+                        console.error('Error loading stats:', error);
+                    }
+                },
+
+                openVideoModal(video) {
+                    this.videoModal.video = video;
+                    this.videoModal.show = true;
+                    // Force video to load the new source
+                    this.$nextTick(() => {
+                        const videoEl = this.$refs.modalVideo;
+                        if (videoEl) {
+                            videoEl.load();
+                        }
+                    });
+                },
+
+                closeVideoModal() {
+                    this.videoModal.show = false;
+                    // Allow animation to finish before clearing
+                    setTimeout(() => {
+                        this.videoModal.video = null;
+                    }, 300);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

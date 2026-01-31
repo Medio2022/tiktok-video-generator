@@ -54,7 +54,7 @@ def generate_subtitles_from_audio(audio_path: str, output_srt: str, model_size: 
             f.write(f"{text}\n\n")
     
     logger.info(f"✅ Sous-titres synchronisés générés: {output_srt}")
-    return output_srt
+    return output_srt, result['segments']
 
 
 def format_timestamp(seconds: float) -> str:
